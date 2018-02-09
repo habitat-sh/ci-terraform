@@ -14,9 +14,38 @@ resource "aws_security_group" "allow_all" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    from_port   = 9631
+    to_port     = 9631
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9638
+    to_port     = 9638
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9638
+    to_port     = 9638
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_instance" "postgres" {
+  count         = 3
   ami           = "ami-79873901"
   instance_type = "t2.micro"
   key_name      = "${var.key_name}"
@@ -24,10 +53,15 @@ resource "aws_instance" "postgres" {
     "${aws_security_group.allow_all.name}"
   ]
 
-  provisioner "remote-exec" {
-    inline = [
-      "echo bite me"
-    ]
+  provisioner "habitat" {
+    peer = "${aws_instance.postgres.0.private_ip}"
+    use_sudo = true
+    service_type = "systemd"
+    
+    service {
+      name = "core/postgresql"
+      topology = "leader"
+    }
 
     connection {
       host       = "${self.public_ip}"
@@ -38,6 +72,6 @@ resource "aws_instance" "postgres" {
   }
 }
 
-output "ip" {
-  value = ["${aws_instance.postgres.public_ip}"]
+output "ips" {
+  value = ["${aws_instance.postgres.*.public_ip}"]
 }
