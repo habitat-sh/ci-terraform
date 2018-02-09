@@ -4,8 +4,8 @@ provider "aws" {
   region     = "${var.region}"
 }
 
-resource "aws_security_group" "allow_all" {
-  name        = "nshamrell-allow-all"
+resource "aws_security_group" "concourse_db_sg" {
+  name        = "concourse-db-allow-all"
   description = "allow all inbound traffic"
 
   ingress {
@@ -36,6 +36,13 @@ resource "aws_security_group" "allow_all" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port       = 0
     to_port         = 0
@@ -44,23 +51,67 @@ resource "aws_security_group" "allow_all" {
   }
 }
 
-resource "aws_instance" "postgres" {
-  count         = 3
+resource "aws_security_group" "concourse_web_sg" {
+  name        = "concourse-web-allow-all"
+  description = "allow all inbound traffic"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9631
+    to_port     = 9631
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9638
+    to_port     = 9638
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9638
+    to_port     = 9638
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "concourse_db" {
   ami           = "ami-79873901"
   instance_type = "t2.micro"
   key_name      = "${var.key_name}"
   security_groups = [
-    "${aws_security_group.allow_all.name}"
+    "${aws_security_group.concourse_db_sg.name}"
   ]
 
   provisioner "habitat" {
-    peer = "${aws_instance.postgres.0.private_ip}"
     use_sudo = true
     service_type = "systemd"
-    
+
     service {
       name = "core/postgresql"
-      topology = "leader"
     }
 
     connection {
@@ -72,6 +123,56 @@ resource "aws_instance" "postgres" {
   }
 }
 
-output "ips" {
-  value = ["${aws_instance.postgres.*.public_ip}"]
+resource "aws_instance" "concourse_web" {
+  ami           = "ami-79873901"
+  instance_type = "t2.micro"
+  key_name      = "${var.key_name}"
+  security_groups = [
+    "${aws_security_group.concourse_web_sg.name}"
+  ]
+
+  provisioner "habitat" {
+    use_sudo = true
+    service_type = "systemd"
+    peer = "${aws_instance.concourse_db.private_ip}"
+
+    service {
+      name = "habitat/concourse-web"
+      binds = ["database:postgresql.default"]
+    }
+
+    connection {
+      host       = "${self.public_ip}"
+      type       = "ssh"
+      user       = "ubuntu"
+      private_key = "${file("${var.key_path}")}"
+    }
+  }
+}
+
+resource "aws_instance" "concourse_worker" {
+  ami           = "ami-79873901"
+  instance_type = "t2.micro"
+  key_name      = "${var.key_name}"
+  security_groups = [
+    "${aws_security_group.concourse_web_sg.name}"
+  ]
+
+  provisioner "habitat" {
+    use_sudo = true
+    service_type = "systemd"
+    peer = "${aws_instance.concourse_web.private_ip}"
+
+    service {
+      name = "habitat/concourse-worker"
+      binds = ["web:concourse-web.default"]
+    }
+
+    connection {
+      host       = "${self.public_ip}"
+      type       = "ssh"
+      user       = "ubuntu"
+      private_key = "${file("${var.key_path}")}"
+    }
+  }
 }
