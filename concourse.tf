@@ -106,6 +106,10 @@ resource "aws_instance" "concourse_db" {
     "${aws_security_group.concourse_db_sg.name}"
   ]
 
+  tags {
+    Name = "concourse_db"
+  }
+
   provisioner "habitat" {
     use_sudo = true
     service_type = "systemd"
@@ -130,6 +134,10 @@ resource "aws_instance" "concourse_web" {
   security_groups = [
     "${aws_security_group.concourse_web_sg.name}"
   ]
+
+  tags {
+    Name = "concourse_web"
+  }
 
   provisioner "habitat" {
     use_sudo = true
@@ -157,6 +165,10 @@ resource "aws_instance" "concourse_worker" {
   security_groups = [
     "${aws_security_group.concourse_web_sg.name}"
   ]
+
+  tags {
+    Name = "concourse_worker"
+  }
 
   provisioner "habitat" {
     use_sudo = true
