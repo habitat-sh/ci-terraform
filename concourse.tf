@@ -51,7 +51,7 @@ resource "aws_security_group" "concourse_db_sg" {
   }
 }
 
-resource "aws_security_group" "concourse_web_sg" {
+resource "aws_security_group" "concourse_web_worker_sg" {
   name        = "concourse-web-allow-all"
   description = "allow all inbound traffic"
 
@@ -128,12 +128,44 @@ resource "aws_instance" "concourse_db" {
   }
 }
 
+resource "aws_instance" "concourse_worker" {
+  ami           = "ami-79873901"
+  instance_type = "t2.micro"
+  key_name      = "${var.key_name}"
+  security_groups = [
+    "${aws_security_group.concourse_web_worker_sg.name}"
+  ]
+
+  tags {
+    Name = "concourse_worker"
+  }
+
+  provisioner "habitat" {
+    use_sudo = true
+    service_type = "systemd"
+    peer = "${aws_instance.concourse_web.private_ip}"
+
+    service {
+      name = "habitat/concourse-worker"
+      binds = ["web:concourse-web.default"]
+    }
+
+    connection {
+      host       = "${self.public_ip}"
+      type       = "ssh"
+      user       = "ubuntu"
+      private_key = "${file("${var.key_path}")}"
+    }
+  }
+}
+
+
 resource "aws_instance" "concourse_web" {
   ami           = "ami-79873901"
   instance_type = "t2.micro"
   key_name      = "${var.key_name}"
   security_groups = [
-    "${aws_security_group.concourse_web_sg.name}"
+    "${aws_security_group.concourse_web_worker_sg.name}"
   ]
 
   tags {
@@ -158,29 +190,26 @@ resource "aws_instance" "concourse_web" {
       private_key = "${file("${var.key_path}")}"
     }
   }
-}
 
-resource "aws_instance" "concourse_worker" {
-  ami           = "ami-79873901"
-  instance_type = "t2.micro"
-  key_name      = "${var.key_name}"
-  security_groups = [
-    "${aws_security_group.concourse_web_sg.name}"
-  ]
-
-  tags {
-    Name = "concourse_worker"
-  }
-
-  provisioner "habitat" {
-    use_sudo = true
-    service_type = "systemd"
-    peer = "${aws_instance.concourse_web.private_ip}"
-
-    service {
-      name = "habitat/concourse-worker"
-      binds = ["web:concourse-web.default"]
-    }
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p keys/web keys/worker",
+      "ssh-keygen -t rsa -f ./keys/web/tsa_host_key -N ''",
+      "ssh-keygen -t rsa -f ./keys/web/session_signing_key -N ''",
+      "ssh-keygen -t rsa -f ./keys/worker/worker_key -N ''",
+      "cp ./keys/worker/worker_key.pub ./keys/web/authorized_worker_keys",
+      "cp ./keys/web/tsa_host_key.pub ./keys/worker",
+      "sudo hab file upload concourse-web.default $(date +%s) ~/keys/web/authorized_worker_keys",
+      "sudo hab file upload concourse-web.default $(date +%s) ~/keys/web/session_signing_key",
+      "sudo hab file upload concourse-web.default $(date +%s) ~/keys/web/session_signing_key.pub",
+      "sudo hab file upload concourse-web.default $(date +%s) ~/keys/web/tsa_host_key",
+      "sudo hab file upload concourse-web.default $(date +%s) ~/keys/web/tsa_host_key.pub",
+      "sudo hab file upload concourse-worker.default $(date +%s) ~/keys/worker/worker_key.pub",
+      "sudo hab file upload concourse-worker.default $(date +%s) ~/keys/worker/worker_key",
+      "sudo hab file upload concourse-worker.default $(date +%s) ~/keys/worker/tsa_host_key.pub",
+      "sudo hab stop habitat/concourse-web",
+      "sudo hab start habitat/concourse-web"
+    ]
 
     connection {
       host       = "${self.public_ip}"
