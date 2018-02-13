@@ -39,7 +39,7 @@ resource "aws_security_group" "concourse_db_sg" {
   ingress {
     from_port   = 5432
     to_port     = 5432
-    protocol    = "udp"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -116,6 +116,7 @@ resource "aws_instance" "concourse_db" {
 
     service {
       name = "core/postgresql"
+      user_toml = "${file("conf/postgres.toml")}"
     }
 
     connection {
@@ -142,11 +143,12 @@ resource "aws_instance" "concourse_web" {
   provisioner "habitat" {
     use_sudo = true
     service_type = "systemd"
-    peer = "${aws_instance.concourse_db.private_ip}"
+    peer = "${aws_instance.concourse_db.public_ip}"
 
     service {
       name = "habitat/concourse-web"
       binds = ["database:postgresql.default"]
+      user_toml = "${data.template_file.concourse_web_toml.rendered}"
     }
 
     connection {
@@ -187,4 +189,23 @@ resource "aws_instance" "concourse_worker" {
       private_key = "${file("${var.key_path}")}"
     }
   }
+}
+
+data "template_file" "concourse_web_toml" {
+  template = "${file("conf/web.toml.tpl")}"
+  vars {
+    db_ip = "${aws_instance.concourse_db.public_ip}"
+  }
+}
+
+output "db_ip" {
+  value = "${aws_instance.concourse_db.public_ip}"
+}
+
+output "web_ip" {
+  value = "${aws_instance.concourse_web.public_ip}"
+}
+
+output "worker_ip" {
+  value = "${aws_instance.concourse_worker.public_ip}"
 }
