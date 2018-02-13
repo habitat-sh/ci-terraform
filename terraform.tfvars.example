@@ -1,0 +1,5 @@
+access_key = "your_aws_access_key"
+secret_key = "your_aws_secret_key"
+key_name = "your_aws_key_pair_name"
+key_path = "path/to/private/half/of/key_pair.pem"
+region = "your-preferred-aws-region (default is us-west-2)"

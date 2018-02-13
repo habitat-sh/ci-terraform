@@ -129,6 +129,7 @@ resource "aws_instance" "concourse_db" {
 }
 
 resource "aws_instance" "concourse_worker" {
+  count         = "3"
   ami           = "ami-79873901"
   instance_type = "t2.micro"
   key_name      = "${var.key_name}"
@@ -227,14 +228,14 @@ data "template_file" "concourse_web_toml" {
   }
 }
 
-output "db_ip" {
-  value = "${aws_instance.concourse_db.public_ip}"
-}
-
 output "web_ip" {
   value = "${aws_instance.concourse_web.public_ip}"
 }
 
-output "worker_ip" {
-  value = "${aws_instance.concourse_worker.public_ip}"
+output "db_ip" {
+  value = "${aws_instance.concourse_db.public_ip}"
+}
+
+output "worker_ips" {
+  value = "${aws_instance.concourse_worker.*.public_ip}"
 }
