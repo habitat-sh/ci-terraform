@@ -34,7 +34,7 @@ Copy terraform.tfvars.example into a new terraform.tfvars file
 $ cp terraform.tfvars.example terraform.tfvars
 ```
 
-Open up the terraform.tfvars file, update the file with the appropriate values for your aws access key, secret key, etc. Save and close the file.
+Open up the terraform.tfvars file, update the file with the appropriate values for your aws access key, secret key, ami (remember, amis are local to AWS regions), db_node_size, etc. Save and close the file.
 
 Now run:
 

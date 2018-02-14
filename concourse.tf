@@ -99,8 +99,8 @@ resource "aws_security_group" "concourse_web_worker_sg" {
 }
 
 resource "aws_instance" "concourse_db" {
-  ami           = "ami-79873901"
-  instance_type = "t2.micro"
+  ami           = "${var.ami}"
+  instance_type = "${var.db_node_size}"
   key_name      = "${var.key_name}"
   security_groups = [
     "${aws_security_group.concourse_db_sg.name}"
@@ -130,8 +130,8 @@ resource "aws_instance" "concourse_db" {
 
 resource "aws_instance" "concourse_worker" {
   count         = "3"
-  ami           = "ami-79873901"
-  instance_type = "t2.micro"
+  ami           = "${var.ami}"
+  instance_type = "${var.worker_node_size}"
   key_name      = "${var.key_name}"
   security_groups = [
     "${aws_security_group.concourse_web_worker_sg.name}"
@@ -162,8 +162,8 @@ resource "aws_instance" "concourse_worker" {
 
 
 resource "aws_instance" "concourse_web" {
-  ami           = "ami-79873901"
-  instance_type = "t2.micro"
+  ami           = "${var.ami}"
+  instance_type = "${var.web_node_size}"
   key_name      = "${var.key_name}"
   security_groups = [
     "${aws_security_group.concourse_web_worker_sg.name}"
