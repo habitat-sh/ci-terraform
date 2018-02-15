@@ -98,6 +98,82 @@ resource "aws_security_group" "concourse_web_worker_sg" {
   }
 }
 
+resource "aws_security_group" "concourse_elb_sg" {
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_elb" "concourse_elb" {
+  name               = "concourse-elb"
+  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  instances = ["${aws_instance.concourse_web.*.id}"]
+
+  listener {
+    instance_port      = 8080
+    instance_protocol  = "http"
+    lb_port            = 443
+    lb_protocol        = "https"
+    ssl_certificate_id = "${aws_iam_server_certificate.ssl.arn}"
+  }
+
+  listener {
+    instance_port      = 8080
+    instance_protocol  = "http"
+    lb_port            = 80
+    lb_protocol        = "http"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+    timeout             = 5
+    target              = "HTTP:8080/"
+    interval            = 30
+  }
+
+  tags {
+    X-Name        = "concourse_elb"
+    X-ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_iam_server_certificate" "ssl" {
+  name_prefix       = "concourse.acceptance.habitat.sh"
+  certificate_body  = "${file("${var.ssl_certificate}")}"
+  private_key       = "${file("${var.ssl_private_key}")}"
+  certificate_chain = "${file("${var.ssl_cert_chain}")}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "concourse_dns" {
+  zone_id = "${var.dns_zone_id}"
+  name = "concourse.acceptance"
+  type = "CNAME"
+  ttl = 300
+  records = ["${aws_elb.concourse_elb.dns_name}"]
+}
+
 resource "aws_instance" "concourse_db" {
   ami           = "${var.ami}"
   instance_type = "${var.db_node_size}"
@@ -145,6 +221,7 @@ resource "aws_instance" "concourse_worker" {
     use_sudo = true
     service_type = "systemd"
     peer = "${aws_instance.concourse_web.private_ip}"
+    permanent_peer = true
 
     service {
       name = "habitat/concourse-worker"
@@ -159,7 +236,6 @@ resource "aws_instance" "concourse_worker" {
     }
   }
 }
-
 
 resource "aws_instance" "concourse_web" {
   ami           = "${var.ami}"
@@ -177,6 +253,7 @@ resource "aws_instance" "concourse_web" {
     use_sudo = true
     service_type = "systemd"
     peer = "${aws_instance.concourse_db.public_ip}"
+    permanent_peer = true
 
     service {
       name = "habitat/concourse-web"
@@ -228,6 +305,7 @@ data "template_file" "concourse_web_toml" {
   }
 }
 
+
 output "web_ip" {
   value = "${aws_instance.concourse_web.public_ip}"
 }
@@ -238,4 +316,8 @@ output "db_ip" {
 
 output "worker_ips" {
   value = "${aws_instance.concourse_worker.*.public_ip}"
+}
+
+output "elb_dns" {
+  value = "${aws_elb.concourse_elb.dns_name}"
 }

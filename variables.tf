@@ -9,3 +9,18 @@ variable "ami" {}
 variable "db_node_size" {}
 variable "web_node_size" {}
 variable "worker_node_size" {}
+variable "ssl_certificate" {
+  description = "File path to the public key certificate in PEM-encoded format"
+}
+
+variable "ssl_private_key" {
+  description = "File path to the private key certificate in PEM-encoded format"
+}
+
+variable "ssl_cert_chain" {
+  description = "File path to the site certificate chain"
+}
+
+variable "dns_zone_id" {
+  description = "DNS zone id for habitat.sh (get from the Habitat AWS account)"
+}
