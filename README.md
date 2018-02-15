@@ -16,10 +16,8 @@ When you apply this Terraform config, you will get
 ### Pre-reqs
 * Access to the Habitat AWS account (talk to the Chef help desk)
 * AWS IAM account on the Habitat AWS account
-* AWS access key (in us-west-2)
-* AWS secret key (in us-west-2)
-* AWS keypair (in us-west-2)
-* Private half of AWS keypair accessible on your local workstation
+* AWS access key associated with your IAM user on the Habitat AWS account
+* AWS secret key associated with your IAM user on the Habitat AWS account
 * Access to habitat team 1password account (talk to a current Habitat team member)
 
 ## Setup
@@ -31,6 +29,24 @@ Go ahead and clone this repo
 ```
 $ git clone git@github.com:habitat-sh/ci-terraform.git
 ```
+
+### Setting up your keys
+
+We will use a shared Habitat server admin key to access the nodes in this Concourse cluster.
+
+**Private habitat-srv-admin key**
+
+* Head to the team Habitat vault
+* Click on "habitat-srv-admin - srv admin"
+* Click the download button
+* Place the downloaded file in ~/.aws
+
+**Public habitat-srv-admin key**
+
+* Head back to the team Habitat vault
+* Click on "habitat-srv-admin.pub - srv admin"
+* Click the download button
+* Place the downloaded file in ~/.aws
 
 ### Setting up your Certificates
 

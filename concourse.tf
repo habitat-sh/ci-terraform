@@ -177,7 +177,7 @@ resource "aws_route53_record" "concourse_dns" {
 resource "aws_instance" "concourse_db" {
   ami           = "${var.ami}"
   instance_type = "${var.db_node_size}"
-  key_name      = "${var.key_name}"
+  key_name      = "srv-admin"
   security_groups = [
     "${aws_security_group.concourse_db_sg.name}"
   ]
@@ -208,7 +208,7 @@ resource "aws_instance" "concourse_worker" {
   count         = "3"
   ami           = "${var.ami}"
   instance_type = "${var.worker_node_size}"
-  key_name      = "${var.key_name}"
+  key_name      = "srv-admin"
   security_groups = [
     "${aws_security_group.concourse_web_worker_sg.name}"
   ]
@@ -240,7 +240,7 @@ resource "aws_instance" "concourse_worker" {
 resource "aws_instance" "concourse_web" {
   ami           = "${var.ami}"
   instance_type = "${var.web_node_size}"
-  key_name      = "${var.key_name}"
+  key_name      = "srv-admin"
   security_groups = [
     "${aws_security_group.concourse_web_worker_sg.name}"
   ]
@@ -306,6 +306,7 @@ data "template_file" "concourse_web_toml" {
     concourse_user_password = "${var.concourse_user_password}"
   }
 }
+
 
 output "web_ip" {
   value = "${aws_instance.concourse_web.public_ip}"
