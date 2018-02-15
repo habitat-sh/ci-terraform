@@ -146,26 +146,23 @@ The best quick example I've found is the [Concourse.ci hello world tutorial](htt
 Go ahead and go through this tutorial - but wherever it shows an IP address, i.e.
 
 ```
-$ fly -t lite login -c http://192.168.100.4:8080
+$ fly -t hab-concourse login -c http://192.168.100.4:8080
 ```
 
-Substitute the IP address of your web node, i.e.
+Substitute in https://concourse.acceptance.habitat.sh, i.e.
 
 ```
-$ fly -t lite login -c http://my_web_node_ip:8080
+$ fly -t hab-concourse login -c https://concourse.acceptance.habitat.sh
 ```
 
-When it prompts you for the username and password, enter "concourse" for the username and "changeme" for the password.
-
-(these are currently the defaults for the habitat/concourse_web plan, I will make these configurable in the next iteration of this config)
+When it prompts you for the username and password, enter the values you defined in your terraform.tfvars file.
 
 Go ahead and create the hello.yml file as prompted in the tutorial, and then upload it to your cluster with
 
 ```
-$ fly -t lite set-pipeline -p hello-world -c hello.yml
+$ fly -t hab-concourse set-pipeline -p hello-world -c hello.yml
 ```
 
-When that succeeds, head back to your browser and, if needed, navigate to http://web_ip:8080 and click the "Login" button in the upper right hand corner. Select the "main" team, then login with username: "concourse", password "changeme".
-
+When that succeeds, head back to your browser and, if needed, navigate to https://concourse.acceptance.habitat.sh and click the "Login" button in the upper right hand corner. Select the "main" team, then login with the username and password you defined in your terraform.tfvars file.
 
 And you should see your "hello-world" pipeline! Check out the [rest of the tutorial](https://concourse.ci/hello-world.html) for info on unpausing and running your pipeline, as well as other simple pipelines! Go forth and Concourse!
