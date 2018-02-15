@@ -302,9 +302,10 @@ data "template_file" "concourse_web_toml" {
   template = "${file("conf/web.toml.tpl")}"
   vars {
     db_ip = "${aws_instance.concourse_db.public_ip}"
+    concourse_user_name = "${var.concourse_user_name}"
+    concourse_user_password = "${var.concourse_user_password}"
   }
 }
-
 
 output "web_ip" {
   value = "${aws_instance.concourse_web.public_ip}"

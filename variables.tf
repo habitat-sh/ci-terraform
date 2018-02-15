@@ -9,6 +9,8 @@ variable "ami" {}
 variable "db_node_size" {}
 variable "web_node_size" {}
 variable "worker_node_size" {}
+variable "concourse_user_name" {}
+variable "concourse_user_password" {}
 variable "ssl_certificate" {
   description = "File path to the public key certificate in PEM-encoded format"
 }
