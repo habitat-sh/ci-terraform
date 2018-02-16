@@ -132,6 +132,12 @@ Now open up the terraform.tfvars file and update it with your appropriate values
 
 ### Apply your Terraform config!
 
+Install the required Terraform plugins with:
+
+```
+$ terraform init
+```
+
 Now run:
 
 ```

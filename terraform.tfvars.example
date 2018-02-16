@@ -1,7 +1,6 @@
 access_key = "your_aws_access_key"
 secret_key = "your_aws_secret_key"
-key_name = "your_aws_key_pair_name"
-key_path = "path/to/private/half/of/key_pair.pem"
+key_path = "path/to/private/half/of/key_pair (should be ~/.aws/habitat-srv-admin)"
 region = "your_preferred_aws_region (default is us-west-2)"
 ami = "aws_ami_id_for_your_nodes (remember, amis are local to AWS regions)"
 db_node_size = "size_for_your_db_node (i.e. t2.medium)"
